@@ -43,7 +43,7 @@ export class SushiswapRouterFactory {
    * Get all possible routes will only go up to 4 due to gas increase the more routes
    * you go.
    */
-  public async getAllPossibleRoutes(): Promise<Token[][]> {
+  public async getAllPossibleRoutes(pairAddress: string): Promise<Token[][]> {
     let findPairs: Token[][][] = [];
 
     if (!this._disableMultihops) {
@@ -64,7 +64,7 @@ export class SushiswapRouterFactory {
 
     const contractCallContext: ContractCallContext = {
       reference: 'sushiswap-pairs',
-      contractAddress: ContractContext.pairAddress,
+      contractAddress: pairAddress,
       abi: ContractContext.pairAbi,
       calls: [],
     };
@@ -148,15 +148,17 @@ export class SushiswapRouterFactory {
   }
 
   public async getAllPossibleRoutesWithQuotes(
-    amountToTrade: BigNumber
+    amountToTrade: BigNumber,
+    routerAddress: string,
+    pairAddress: string
   ): Promise<RouteQuote[]> {
     const tradeAmount = this.formatAmountToTrade(amountToTrade);
 
-    const routes = await this.getAllPossibleRoutes();
+    const routes = await this.getAllPossibleRoutes(pairAddress);
 
     const contractCallContext: ContractCallContext<Token[][]> = {
       reference: 'sushiswap-route-quotes',
-      contractAddress: ContractContext.routerAddress,
+      contractAddress: routerAddress,
       abi: ContractContext.routerAbi,
       calls: [],
       context: routes,
@@ -189,9 +191,11 @@ export class SushiswapRouterFactory {
    * @param amountToTrade The amount they want to trade
    */
   public async findBestRoute(
-    amountToTrade: BigNumber
+    amountToTrade: BigNumber,
+    routerAddress: string,
+    pairAddress: string
   ): Promise<BestRouteQuotes> {
-    const allRoutes = await this.getAllPossibleRoutesWithQuotes(amountToTrade);
+    const allRoutes = await this.getAllPossibleRoutesWithQuotes(amountToTrade, routerAddress, pairAddress);
     if (allRoutes.length === 0) {
       throw new SushiswapError(
         `No routes found for ${this._fromToken.contractAddress} > ${this._toToken.contractAddress}`,

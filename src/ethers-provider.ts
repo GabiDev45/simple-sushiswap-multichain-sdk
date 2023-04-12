@@ -22,7 +22,7 @@ export class EthersProvider {
       return;
     }
 
-    this._ethersProvider = new providers.InfuraProvider(chainId);
+    this._ethersProvider = new providers.JsonRpcProvider(providerUrl);
   }
 
   /**

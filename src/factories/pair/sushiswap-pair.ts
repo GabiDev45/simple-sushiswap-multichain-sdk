@@ -106,6 +106,8 @@ export class SushiswapPair {
           this._sushiswapPairContext.toTokenContractAddress
       )!,
       ethereumAddress: this._sushiswapPairContext.ethereumAddress,
+      routerAddress: this._sushiswapPairContext.routerAddress,
+      pairAddress: this._sushiswapPairContext.pairAddress,
       settings:
         this._sushiswapPairContext.settings || new SushiswapPairSettings(),
       ethersProvider: this._ethersProvider,

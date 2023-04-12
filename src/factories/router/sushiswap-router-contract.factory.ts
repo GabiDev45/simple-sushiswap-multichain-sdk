@@ -6,10 +6,10 @@ import { EthersProvider } from '../../ethers-provider';
 export class SushiswapRouterContractFactory {
   private _sushiswapRouterContract = this._ethersProvider.getContract<RouterContractContext>(
     JSON.stringify(ContractContext.routerAbi),
-    ContractContext.routerAddress
+    this.routerAddress
   );
 
-  constructor(private _ethersProvider: EthersProvider) {}
+  constructor(private _ethersProvider: EthersProvider, private routerAddress: string) {}
 
   public addLiquidity(
     tokenA: string,

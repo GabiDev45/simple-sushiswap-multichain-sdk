@@ -29,12 +29,13 @@
   "homepage": "https://github.com/joshstevens19/simple-sushiswap-sdk#readme",
   "dependencies": {
     "bignumber.js": "^9.0.1",
-    "ethereum-multicall": "^2.0.1",
+    "ethereum-multicall": "^2.16.1",
     "ethers": "^5.0.26",
     "rxjs": "^6.6.3"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.20",
+    "@types/jest": "^26.0.24",
+    "@types/mocha": "^10.0.1",
     "ethereum-abi-types-generator": "^1.0.10",
     "jest": "^24.9.0",
     "ts-jest": "^24.1.0",

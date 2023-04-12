@@ -8,4 +8,6 @@ export interface SushiswapPairFactoryContext {
   ethereumAddress: string;
   settings: SushiswapPairSettings;
   ethersProvider: EthersProvider;
+  routerAddress: string;
+  pairAddress: string;
 }

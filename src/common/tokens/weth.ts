@@ -17,6 +17,16 @@ export class WETH {
     };
   }
 
+  public static BSC(): Token {
+    return {
+      chainId: ChainId.BSC,
+      contractAddress: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+      decimals: 18,
+      symbol: 'WBNB',
+      name: 'Wrapped BNB',
+    };
+  }
+
   public static ROPSTEN() {
     return {
       chainId: ChainId.ROPSTEN,
@@ -65,6 +75,8 @@ export class WETH {
     switch (chainId) {
       case ChainId.MAINNET:
         return this.MAINNET();
+      case ChainId.BSC:
+        return this.BSC();
       case ChainId.ROPSTEN:
         return this.ROPSTEN();
       case ChainId.RINKEBY:
