@@ -5,6 +5,8 @@ interface SushiswapPairContextBase {
   fromTokenContractAddress: string;
   toTokenContractAddress: string;
   ethereumAddress: string;
+  routerAddress: string;
+  pairAddress: string,
   settings?: SushiswapPairSettings | undefined;
 }
 

@@ -16,6 +16,16 @@ export class DAI {
     };
   }
 
+  public static BSC() {
+    return {
+      chainId: ChainId.BSC,
+      contractAddress: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3',
+      decimals: 18,
+      symbol: 'DAI',
+      name: 'Dai Stablecoin',
+    };
+  }
+
   /**
    * Get DAI token info by chain id
    * @param chainId The chain id
@@ -24,6 +34,8 @@ export class DAI {
     switch (chainId) {
       case ChainId.MAINNET:
         return this.MAINNET();
+      case ChainId.BSC:
+        return this.BSC();
       default:
         throw new SushiswapError(
           `${chainId} is not allowed`,

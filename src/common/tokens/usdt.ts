@@ -16,6 +16,16 @@ export class USDT {
     };
   }
 
+  public static BSC() {
+    return {
+      chainId: ChainId.BSC,
+      contractAddress: '0x55d398326f99059fF775485246999027B3197955',
+      decimals: 18,
+      symbol: 'USDT',
+      name: 'Tether USD',
+    };
+  }
+
   /**
    * Get USDT token info by chain id
    * @param chainId The chain id
@@ -24,6 +34,8 @@ export class USDT {
     switch (chainId) {
       case ChainId.MAINNET:
         return this.MAINNET();
+      case ChainId.BSC:
+        return this.BSC();
       default:
         throw new SushiswapError(
           `${chainId} is not allowed`,

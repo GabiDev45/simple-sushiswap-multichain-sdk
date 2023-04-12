@@ -6,10 +6,10 @@ import { EthersProvider } from '../../ethers-provider';
 export class SushiswapPairContractFactory {
   private _sushiswapPairFactory = this._ethersProvider.getContract<PairContractContext>(
     JSON.stringify(ContractContext.pairAbi),
-    ContractContext.pairAddress
+    this.routerAddress
   );
 
-  constructor(private _ethersProvider: EthersProvider) {}
+  constructor(private _ethersProvider: EthersProvider, private routerAddress: string) {}
 
   public async allPairs(parameter0: BigNumberish): Promise<string> {
     return await this._sushiswapPairFactory.allPairs(parameter0);

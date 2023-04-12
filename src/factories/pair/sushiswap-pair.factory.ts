@@ -1,7 +1,6 @@
 import BigNumber from 'bignumber.js';
 import { Subject } from 'rxjs';
 import { Constants } from '../../common/constants';
-import { ContractContext } from '../../common/contract-context';
 import { ErrorCodes } from '../../common/errors/error-codes';
 import { SushiswapError } from '../../common/errors/sushiswap-error';
 import { hexlify } from '../../common/utils/hexlify';
@@ -30,11 +29,13 @@ export class SushiswapPairFactory {
   );
 
   private _SushiswapRouterContractFactory = new SushiswapRouterContractFactory(
-    this._sushiswapPairFactoryContext.ethersProvider
+    this._sushiswapPairFactoryContext.ethersProvider,
+    this._sushiswapPairFactoryContext.routerAddress
   );
 
   private _sushiswapPairFactory = new SushiswapPairContractFactory(
-    this._sushiswapPairFactoryContext.ethersProvider
+    this._sushiswapPairFactoryContext.ethersProvider,
+    this._sushiswapPairFactoryContext.routerAddress
   );
 
   private _SushiswapRouterFactory = new SushiswapRouterFactory(
@@ -76,14 +77,14 @@ export class SushiswapPairFactory {
    * Execute the trade path
    * @param amount The amount
    */
-  private async executeTradePath(amount: BigNumber): Promise<TradeContext> {
+  private async executeTradePath(amount: BigNumber, routerAddress: string): Promise<TradeContext> {
     switch (this.tradePath()) {
       case TradePath.erc20ToEth:
-        return await this.getTokenTradeAmountErc20ToEth(amount);
+        return await this.getTokenTradeAmountErc20ToEth(amount, routerAddress);
       case TradePath.ethToErc20:
-        return await this.getTokenTradeAmountEthToErc20(amount);
+        return await this.getTokenTradeAmountEthToErc20(amount, routerAddress);
       case TradePath.erc20ToErc20:
-        return await this.getTokenTradeAmountErc20ToErc20(amount);
+        return await this.getTokenTradeAmountErc20ToErc20(amount, routerAddress);
       default:
         throw new SushiswapError(
           `${this.tradePath()} is not defined`,
@@ -110,14 +111,15 @@ export class SushiswapPairFactory {
    * if you want it to be executed on the blockchain
    * @amount The amount you want to swap, this is the FROM token amount.
    */
-  public async trade(amount: string): Promise<TradeContext> {
+  public async trade(amount: string, routerAddress: string): Promise<TradeContext> {
     this.destroy();
 
     const tradeContext: TradeContext = await this.executeTradePath(
-      new BigNumber(amount)
+      new BigNumber(amount),
+      routerAddress
     );
 
-    this.watchTradePrice(tradeContext);
+    this.watchTradePrice(tradeContext, routerAddress);
 
     return tradeContext;
   }
@@ -134,7 +136,7 @@ export class SushiswapPairFactory {
    * @param amountToTrade The amount to trade
    */
   public async findBestRoute(amountToTrade: string): Promise<BestRouteQuotes> {
-    return await this._routes.findBestRoute(new BigNumber(amountToTrade));
+    return await this._routes.findBestRoute(new BigNumber(amountToTrade), this._sushiswapPairFactoryContext.routerAddress, this._sushiswapPairFactoryContext.pairAddress);
   }
 
   /**
@@ -142,18 +144,22 @@ export class SushiswapPairFactory {
    * @param amountToTrade The amount to trade
    */
   public async findAllPossibleRoutesWithQuote(
-    amountToTrade: string
+    amountToTrade: string,
+    pairAddress: string,
+    routerAddress: string
   ): Promise<RouteQuote[]> {
     return await this._routes.getAllPossibleRoutesWithQuotes(
-      new BigNumber(amountToTrade)
+      new BigNumber(amountToTrade),
+      routerAddress,
+      pairAddress
     );
   }
 
   /**
    * Find all possible routes
    */
-  public async findAllPossibleRoutes(): Promise<Token[][]> {
-    return await this._routes.getAllPossibleRoutes();
+  public async findAllPossibleRoutes(pairAddress: string): Promise<Token[][]> {
+    return await this._routes.getAllPossibleRoutes(pairAddress);
   }
 
   /**
@@ -254,7 +260,8 @@ export class SushiswapPairFactory {
    */
   public async getAllowanceAndBalanceOfForFromToken(): Promise<AllowanceAndBalanceOf> {
     return await this._fromTokenFactory.getAllowanceAndBalanceOf(
-      this._sushiswapPairFactoryContext.ethereumAddress
+      this._sushiswapPairFactoryContext.ethereumAddress,
+      this._sushiswapPairFactoryContext.routerAddress
     );
   }
 
@@ -268,7 +275,8 @@ export class SushiswapPairFactory {
     }
 
     const allowance = await this._fromTokenFactory.allowance(
-      this._sushiswapPairFactoryContext.ethereumAddress
+      this._sushiswapPairFactoryContext.ethereumAddress,
+      this._sushiswapPairFactoryContext.routerAddress
     );
 
     return allowance;
@@ -278,7 +286,7 @@ export class SushiswapPairFactory {
    * Generate the from token approve data max allowance to move the tokens.
    * This will return the data for you to send as a transaction
    */
-  public async generateApproveMaxAllowanceData(): Promise<Transaction> {
+  public async generateApproveMaxAllowanceData(routerAddress: string): Promise<Transaction> {
     if (this.tradePath() === TradePath.ethToErc20) {
       throw new SushiswapError(
         'You do not need to generate approve sushiswap allowance when doing eth > erc20',
@@ -287,7 +295,7 @@ export class SushiswapPairFactory {
     }
 
     const data = this._fromTokenFactory.generateApproveAllowanceData(
-      ContractContext.routerAddress,
+      routerAddress,
       '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
     );
 
@@ -304,9 +312,10 @@ export class SushiswapPairFactory {
    * @param amount The amount
    */
   private async getTokenTradeAmountErc20ToEth(
-    amount: BigNumber
+    amount: BigNumber,
+    routerAddress: string
   ): Promise<TradeContext> {
-    return await this.findBestPriceAndPathErc20ToEth(amount);
+    return await this.findBestPriceAndPathErc20ToEth(amount, routerAddress);
   }
 
   /**
@@ -314,9 +323,10 @@ export class SushiswapPairFactory {
    * @param ethAmount The eth amount
    */
   private async getTokenTradeAmountEthToErc20(
-    ethAmount: BigNumber
+    ethAmount: BigNumber,
+    routerAddress: string
   ): Promise<TradeContext> {
-    return await this.findBestPriceAndPathEthToErc20(ethAmount);
+    return await this.findBestPriceAndPathEthToErc20(ethAmount, routerAddress);
   }
 
   /**
@@ -324,9 +334,10 @@ export class SushiswapPairFactory {
    * @param amount The amount
    */
   private async getTokenTradeAmountErc20ToErc20(
-    amount: BigNumber
+    amount: BigNumber,
+    routerAddress: string
   ): Promise<TradeContext> {
-    return await this.findBestPriceAndPathErc20ToErc20(amount);
+    return await this.findBestPriceAndPathErc20ToErc20(amount, routerAddress);
   }
 
   /**
@@ -334,9 +345,10 @@ export class SushiswapPairFactory {
    * @param amount the erc20Token amount being sent
    */
   private async findBestPriceAndPathErc20ToEth(
-    erc20Amount: BigNumber
+    erc20Amount: BigNumber,
+    routerAddress: string
   ): Promise<TradeContext> {
-    const bestRouteQuotes = await this._routes.findBestRoute(erc20Amount);
+    const bestRouteQuotes = await this._routes.findBestRoute(erc20Amount, this._sushiswapPairFactoryContext.routerAddress, this._sushiswapPairFactoryContext.pairAddress);
     const bestRouteQuote = bestRouteQuotes.bestRouteQuote;
 
     const convertQuoteWithSlippage = new BigNumber(
@@ -381,7 +393,7 @@ export class SushiswapPairFactory {
         erc20Amount.toFixed(),
         allowanceAndBalanceOf.balanceOf
       ),
-      transaction: this.buildUpTransactionErc20(data),
+      transaction: this.buildUpTransactionErc20(data, routerAddress),
       allTriedRoutesQuotes: bestRouteQuotes.triedRoutesQuote,
       quoteChanged$: this._quoteChanged$,
       destroy: () => this.destroy(),
@@ -395,9 +407,10 @@ export class SushiswapPairFactory {
    * @param amount the erc20Token amount being sent
    */
   private async findBestPriceAndPathErc20ToErc20(
-    erc20Amount: BigNumber
+    erc20Amount: BigNumber,
+    routerAddress: string
   ): Promise<TradeContext> {
-    const bestRouteQuotes = await this._routes.findBestRoute(erc20Amount);
+    const bestRouteQuotes = await this._routes.findBestRoute(erc20Amount, this._sushiswapPairFactoryContext.routerAddress, this._sushiswapPairFactoryContext.pairAddress);
     const bestRouteQuote = bestRouteQuotes.bestRouteQuote;
 
     const convertQuoteWithSlippage = new BigNumber(
@@ -442,7 +455,7 @@ export class SushiswapPairFactory {
         erc20Amount.toFixed(),
         allowanceAndBalanceOf.balanceOf
       ),
-      transaction: this.buildUpTransactionErc20(data),
+      transaction: this.buildUpTransactionErc20(data, routerAddress),
       allTriedRoutesQuotes: bestRouteQuotes.triedRoutesQuote,
       quoteChanged$: this._quoteChanged$,
       destroy: () => this.destroy(),
@@ -456,9 +469,10 @@ export class SushiswapPairFactory {
    * @param ethAmount The eth amount
    */
   private async findBestPriceAndPathEthToErc20(
-    ethAmount: BigNumber
+    ethAmount: BigNumber,
+    routerAddress: string
   ): Promise<TradeContext> {
-    const bestRouteQuotes = await this._routes.findBestRoute(ethAmount);
+    const bestRouteQuotes = await this._routes.findBestRoute(ethAmount, this._sushiswapPairFactoryContext.routerAddress, this._sushiswapPairFactoryContext.pairAddress);
     const bestRouteQuote = bestRouteQuotes.bestRouteQuote;
 
     const convertQuoteWithSlippage = new BigNumber(
@@ -494,7 +508,7 @@ export class SushiswapPairFactory {
       toToken: this.toToken,
       fromToken: this.fromToken,
       fromBalance: await this.hasGotEnoughBalanceEth(ethAmount.toFixed()),
-      transaction: this.buildUpTransactionEth(ethAmount, data),
+      transaction: this.buildUpTransactionEth(ethAmount, data, routerAddress),
       allTriedRoutesQuotes: bestRouteQuotes.triedRoutesQuote,
       quoteChanged$: this._quoteChanged$,
       destroy: () => this.destroy(),
@@ -592,9 +606,9 @@ export class SushiswapPairFactory {
    * Build up a transaction for erc20 from
    * @param data The data
    */
-  private buildUpTransactionErc20(data: string): Transaction {
+  private buildUpTransactionErc20(data: string, routerAddress: string): Transaction {
     return {
-      to: ContractContext.routerAddress,
+      to: routerAddress,
       from: this._sushiswapPairFactoryContext.ethereumAddress,
       data,
       value: Constants.EMPTY_HEX_STRING,
@@ -608,10 +622,11 @@ export class SushiswapPairFactory {
    */
   private buildUpTransactionEth(
     ethValue: BigNumber,
-    data: string
+    data: string,
+    routerAddress: string
   ): Transaction {
     return {
-      to: ContractContext.routerAddress,
+      to: routerAddress,
       from: this._sushiswapPairFactoryContext.ethereumAddress,
       data,
       value: toEthersBigNumber(parseEther(ethValue)).toHexString(),
@@ -642,11 +657,12 @@ export class SushiswapPairFactory {
    * Watch trade price move automatically emitting the stream if it changes
    * @param tradeContext The old trade context aka the current one
    */
-  private async watchTradePrice(tradeContext: TradeContext): Promise<void> {
+  private async watchTradePrice(tradeContext: TradeContext, routerAddress: string): Promise<void> {
     this._quoteChangeTimeout = setTimeout(async () => {
       if (this._quoteChanged$.observers.length > 0) {
         const trade = await this.executeTradePath(
-          new BigNumber(tradeContext.baseConvertRequest)
+          new BigNumber(tradeContext.baseConvertRequest),
+          routerAddress
         );
         if (
           !new BigNumber(trade.expectedConvertQuote).eq(
@@ -655,20 +671,20 @@ export class SushiswapPairFactory {
           trade.routeText !== tradeContext.routeText
         ) {
           this._quoteChanged$.next(trade);
-          this.watchTradePrice(trade);
+          this.watchTradePrice(trade, routerAddress);
           return;
         }
 
         // it has expired send another one to them
         if (tradeContext.tradeExpires > this.generateTradeDeadlineUnixTime()) {
           this._quoteChanged$.next(trade);
-          this.watchTradePrice(trade);
+          this.watchTradePrice(trade, routerAddress);
           return;
         }
 
-        this.watchTradePrice(tradeContext);
+        this.watchTradePrice(tradeContext, routerAddress);
       } else {
-        this.watchTradePrice(tradeContext);
+        this.watchTradePrice(tradeContext, routerAddress);
       }
       // maybe make config???
       // query new prices every 10 seconds

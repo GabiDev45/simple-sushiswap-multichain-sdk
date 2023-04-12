@@ -69,10 +69,10 @@ export class TokenFactory {
    * for a user
    * @ethereumAddress The users ethereum address
    */
-  public async allowance(ethereumAddress: string): Promise<string> {
+  public async allowance(ethereumAddress: string, routerAddress: string): Promise<string> {
     const allowance = await this._erc20TokenContracy.allowance(
       ethereumAddress,
-      ContractContext.routerAddress
+      routerAddress
     );
 
     return allowance.toHexString();
@@ -115,7 +115,8 @@ export class TokenFactory {
    * @param ethereumAddress
    */
   public async getAllowanceAndBalanceOf(
-    ethereumAddress: string
+    ethereumAddress: string,
+    routerAddress: string
   ): Promise<AllowanceAndBalanceOf> {
     const ALLOWANCE = 0;
     const BALANCEOF = 1;
@@ -128,7 +129,7 @@ export class TokenFactory {
         {
           reference: 'allowance',
           methodName: 'allowance',
-          methodParameters: [ethereumAddress, ContractContext.routerAddress],
+          methodParameters: [ethereumAddress, routerAddress],
         },
         {
           reference: 'balanceOf',

@@ -16,6 +16,16 @@ export class USDC {
     };
   }
 
+  public static BSC() {
+    return {
+      chainId: ChainId.BSC,
+      contractAddress: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
+      decimals: 18,
+      symbol: 'USDC',
+      name: 'USD Coin',
+    };
+  }
+
   /**
    * Get USDC token info by chain id
    * @param chainId The chain id
@@ -24,6 +34,8 @@ export class USDC {
     switch (chainId) {
       case ChainId.MAINNET:
         return this.MAINNET();
+      case ChainId.BSC:
+        return this.BSC();
       default:
         throw new SushiswapError(
           `${chainId} is not allowed`,

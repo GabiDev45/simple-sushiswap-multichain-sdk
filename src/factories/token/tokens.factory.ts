@@ -48,11 +48,9 @@ export class TokensFactory {
 
         contractCallContexts.push(contractCallContext);
       }
-
       const contractCallResults = await this._multicall.call(
         contractCallContexts
       );
-
       const tokens: Token[] = [];
 
       for (const result in contractCallResults.results) {
@@ -67,7 +65,6 @@ export class TokensFactory {
           name: tokenInfo.callsReturnContext[NAME].returnValues[0],
         });
       }
-
       return tokens;
     } catch (error) {
       throw new SushiswapError(

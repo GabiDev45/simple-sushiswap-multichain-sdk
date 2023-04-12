@@ -11,7 +11,7 @@ export function getTradePath(
   if (fromToken.contractAddress === WETH.token(chainId).contractAddress) {
     return TradePath.ethToErc20;
   }
-
+  
   if (toToken.contractAddress === WETH.token(chainId).contractAddress) {
     return TradePath.erc20ToEth;
   }
